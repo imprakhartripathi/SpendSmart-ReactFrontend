@@ -1,0 +1,24 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--font-family-base);
+  line-height: 1.5;
+  color: var(--color-text);
+  background: radial-gradient(
+      circle at 10% 5%,
+      rgba(0, 89, 221, 0.12),
+      transparent 35%
+    ),
+    linear-gradient(180deg, var(--color-bg-start) 0%, var(--color-bg-end) 100%);
+}
