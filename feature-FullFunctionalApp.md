@@ -1,7 +1,7 @@
 # Branch: feature/FullFunctionalApp
 
 ## Origin
-- Branched from: `feature/CoreDomainApiFoundation`
+- Branched from: `feature/AppInitialSetup`
 - Repository: `SpendSmart-ReactFrontend`
 
 ## Scope
@@ -29,6 +29,10 @@
 - Added charting dependency: `recharts`.
 - Updated design system and responsive styling for desktop/mobile:
   - New tokens and utility styles in `src/styles/_tokens.scss` and `src/styles/_utilities.scss`.
+- Updated environment routing so frontend integrates through API Gateway by default:
+  - Added gateway base URL support via `VITE_API_BASE_URL` with local fallback.
+  - Mapped all service endpoints to `/api/*` gateway routes for auth, expense, income, category, budget, analytics, recurring, and notification.
+- Updated `.env.example` and README integration notes to document gateway-first API usage.
 
 ## Verification
 - `npm install`
