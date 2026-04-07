@@ -67,5 +67,7 @@ Set these in `.env.local`:
 - `VITE_API_TIMEOUT_MS`
 - `VITE_ENABLE_DEVTOOLS`
 
+For gateway mode, keep each `VITE_*_API_URL` at `http://localhost:8080/api`.
+
 All env parsing is in `src/config/env.ts`.
 Runtime app config is in `src/config/config.ts`.
