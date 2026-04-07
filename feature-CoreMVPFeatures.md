@@ -1,7 +1,7 @@
-# Branch: feature/FullFunctionalApp
+# Branch: feature/CoreMVPFeatures
 
 ## Origin
-- Branched from: `feature/AppInitialSetup`
+- Branched from: `feature/CoreDomainApiFoundation`
 - Repository: `SpendSmart-ReactFrontend`
 
 ## Scope
@@ -40,5 +40,5 @@
   - Result: `vite build` successful
 
 ## Next Branch Origin
-- Suggested next branch should originate from: `feature/FullFunctionalApp`
+- Suggested next branch should originate from: `feature/CoreMVPFeatures`
 - Suggested next branch focus: `feature/FrontendRoutingAndStateSlices`
