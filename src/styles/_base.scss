@@ -15,10 +15,15 @@ body {
   font-family: var(--font-family-base);
   line-height: 1.5;
   color: var(--color-text);
-  background: radial-gradient(
-      circle at 10% 5%,
-      rgba(0, 89, 221, 0.12),
-      transparent 35%
-    ),
-    linear-gradient(180deg, var(--color-bg-start) 0%, var(--color-bg-end) 100%);
+  background:
+    radial-gradient(circle at 14% 8%, rgba(200, 76, 27, 0.16), transparent 36%),
+    radial-gradient(circle at 88% 16%, rgba(24, 118, 74, 0.1), transparent 28%),
+    linear-gradient(180deg, #fbf6ee 0%, var(--color-bg) 48%, #f3eadb 100%);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
 }

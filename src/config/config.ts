@@ -8,6 +8,16 @@ export const config = Object.freeze({
   api: {
     baseUrl: env.apiBaseUrl,
     timeoutMs: env.apiTimeoutMs,
+    services: {
+      auth: env.authApiUrl,
+      expense: env.expenseApiUrl,
+      income: env.incomeApiUrl,
+      category: env.categoryApiUrl,
+      budget: env.budgetApiUrl,
+      analytics: env.analyticsApiUrl,
+      recurring: env.recurringApiUrl,
+      notification: env.notificationApiUrl,
+    },
   },
   features: {
     enableDevtools: env.enableDevtools,

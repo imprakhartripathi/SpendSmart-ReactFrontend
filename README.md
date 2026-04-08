@@ -1,9 +1,33 @@
 # SpendSmart React Frontend
 
-React + TypeScript + Vite setup with:
-- Structured global styling using SCSS modules and Tailwind v4 import.
-- Typed environment handling in a dedicated `env.ts`.
-- Centralized runtime/app configuration in `config.ts`.
+SpendSmart is a React + TypeScript + Vite frontend integrated with 8 Spring Boot microservices:
+- Auth
+- Expense
+- Income
+- Category
+- Budget
+- Analytics
+- Recurring
+- Notification
+
+## What This App Includes
+
+- Authentication: register + login
+- Profile management: profile update, currency update, monthly budget goal, account deactivation
+- Expense management: create, edit, delete, search
+- Income management: create, edit, delete, search
+- Category management: create, edit, delete, default seeding
+- Budget management: create, edit, delete, progress tracking, alert dispatch
+- Recurring management: create, edit, deactivate, delete, process due now, upcoming list
+- Notifications center: mark read, acknowledge, mark all read, delete
+- Analytics dashboard:
+  - Monthly summary
+  - Category pie chart
+  - Income vs expense chart
+  - Daily expense trend
+  - Savings rate trend
+  - Cashflow trend
+  - Forecast + health score
 
 ## Setup
 
@@ -11,43 +35,35 @@ React + TypeScript + Vite setup with:
    ```bash
    npm install
    ```
-2. Create your local env file:
+2. Create local env file:
    ```bash
    cp .env.example .env.local
    ```
-3. Start dev server:
+3. Run dev server:
    ```bash
    npm run dev
    ```
-
-## Project Structure
-
-```txt
-src/
-  app/
-    App.tsx
-  config/
-    config.ts
-    env.ts
-  styles/
-    _base.scss
-    _tokens.scss
-    _utilities.scss
-  types/
-    env.d.ts
-  tailwind.css
-  index.scss
-  main.tsx
-```
+4. Build production bundle:
+   ```bash
+   npm run build
+   ```
 
 ## Environment Variables
 
-Define these in `.env.local`:
+Set these in `.env.local`:
 
 - `VITE_APP_NAME`
 - `VITE_API_BASE_URL`
+- `VITE_AUTH_API_URL`
+- `VITE_EXPENSE_API_URL`
+- `VITE_INCOME_API_URL`
+- `VITE_CATEGORY_API_URL`
+- `VITE_BUDGET_API_URL`
+- `VITE_ANALYTICS_API_URL`
+- `VITE_RECURRING_API_URL`
+- `VITE_NOTIFICATION_API_URL`
 - `VITE_API_TIMEOUT_MS`
 - `VITE_ENABLE_DEVTOOLS`
 
-All env reads are centralized in `src/config/env.ts`.
-App-level config exposed to the rest of the app is in `src/config/config.ts`.
+All env parsing is in `src/config/env.ts`.
+Runtime app config is in `src/config/config.ts`.
