@@ -10,6 +10,8 @@ SpendSmart is a React + TypeScript + Vite frontend integrated with 8 Spring Boot
 - Recurring
 - Notification
 
+The default integration path is through API Gateway (`http://localhost:8080/api/*`).
+
 ## What This App Includes
 
 - Authentication: register + login
@@ -64,6 +66,8 @@ Set these in `.env.local`:
 - `VITE_NOTIFICATION_API_URL`
 - `VITE_API_TIMEOUT_MS`
 - `VITE_ENABLE_DEVTOOLS`
+
+For gateway mode, keep each `VITE_*_API_URL` at `http://localhost:8080/api`.
 
 All env parsing is in `src/config/env.ts`.
 Runtime app config is in `src/config/config.ts`.

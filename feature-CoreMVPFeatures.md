@@ -1,4 +1,4 @@
-# Branch: feature/FullFunctionalApp
+# Branch: feature/CoreMVPFeatures
 
 ## Origin
 - Branched from: `feature/CoreDomainApiFoundation`
@@ -29,6 +29,10 @@
 - Added charting dependency: `recharts`.
 - Updated design system and responsive styling for desktop/mobile:
   - New tokens and utility styles in `src/styles/_tokens.scss` and `src/styles/_utilities.scss`.
+- Updated environment routing so frontend integrates through API Gateway by default:
+  - Added gateway base URL support via `VITE_API_BASE_URL` with local fallback.
+  - Mapped all service endpoints to `/api/*` gateway routes for auth, expense, income, category, budget, analytics, recurring, and notification.
+- Updated `.env.example` and README integration notes to document gateway-first API usage.
 
 ## Verification
 - `npm install`
@@ -36,5 +40,5 @@
   - Result: `vite build` successful
 
 ## Next Branch Origin
-- Suggested next branch should originate from: `feature/FullFunctionalApp`
+- Suggested next branch should originate from: `feature/CoreMVPFeatures`
 - Suggested next branch focus: `feature/FrontendRoutingAndStateSlices`
