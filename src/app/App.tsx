@@ -48,7 +48,7 @@ type UserProfile = {
   timezone: string
   avatarUrl: string
   bio: string
-  provider: 'LOCAL' | 'GOOGLE'
+  provider: 'LOCAL' | 'GOOGLE' | 'GITHUB'
   active: boolean
   createdAt: string
   monthlyBudget: number
@@ -145,10 +145,12 @@ type Notification = {
   notificationId: number
   recipientId: number
   type:
+    | 'WELCOME'
     | 'BUDGET_ALERT'
     | 'RECURRING_DUE'
     | 'MONTHLY_SUMMARY'
     | 'BUDGET_EXCEEDED'
+    | 'BIG_EXPENSE_ALERT'
     | 'SYSTEM'
   severity: 'INFO' | 'WARNING' | 'CRITICAL'
   title: string
@@ -855,6 +857,75 @@ function App() {
     void fetchDashboard(session.userId)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [analyticsYear, analyticsMonth, analyticsTrailingMonths, profile?.monthlyBudget])
+
+  useEffect(() => {
+    if (session) return
+
+    const match = window.location.pathname.match(/^\/oauth\/callback\/(google|github)$/i)
+    if (!match) return
+
+    const provider = match[1].toLowerCase()
+    const search = new URLSearchParams(window.location.search)
+    const code = search.get('code')
+    const oauthError = search.get('error')
+
+    if (oauthError) {
+      setFlash({ kind: 'error', text: `OAuth login failed: ${oauthError}` })
+      window.history.replaceState({}, '', '/')
+      return
+    }
+
+    if (!code) {
+      setFlash({ kind: 'error', text: 'OAuth login failed: authorization code missing.' })
+      window.history.replaceState({}, '', '/')
+      return
+    }
+
+    void (async () => {
+      setWorking(true)
+      try {
+        const response = await runApi<{ token: string; userId: number; email: string }>(
+          'auth',
+          'POST',
+          `/auth/oauth2/callback/${provider}`,
+          undefined,
+          { code },
+        )
+
+        persistSession({
+          token: response.token,
+          userId: response.userId,
+          email: response.email,
+        })
+        setFlash({ kind: 'success', text: 'OAuth login successful' })
+      } catch (error) {
+        showError(error, 'OAuth login failed')
+      } finally {
+        setWorking(false)
+        window.history.replaceState({}, '', '/')
+      }
+    })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session])
+
+  const startOAuthLogin = async (provider: 'google' | 'github') => {
+    setWorking(true)
+    try {
+      const response = await runApi<{ authorizationUrl: string }>(
+        'auth',
+        'GET',
+        `/auth/oauth2/authorize/${provider}`,
+      )
+
+      if (!response.authorizationUrl) {
+        throw new Error('Authorization URL was not returned')
+      }
+      window.location.href = response.authorizationUrl
+    } catch (error) {
+      showError(error, `Unable to start ${provider} login`)
+      setWorking(false)
+    }
+  }
 
   const onLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -1568,6 +1639,27 @@ function App() {
                 {working ? 'Working...' : 'Login'}
               </button>
             </form>
+            <div className="oauth-stack">
+              <p className="muted">Or continue with</p>
+              <div className="oauth-buttons">
+                <button
+                  className="button-oauth button-google"
+                  disabled={working}
+                  onClick={() => void startOAuthLogin('google')}
+                  type="button"
+                >
+                  Google
+                </button>
+                <button
+                  className="button-oauth button-github"
+                  disabled={working}
+                  onClick={() => void startOAuthLogin('github')}
+                  type="button"
+                >
+                  GitHub
+                </button>
+              </div>
+            </div>
           </article>
 
           <article className="panel">
@@ -1742,7 +1834,7 @@ function App() {
                 <p className="muted">No category data for selected month.</p>
               ) : (
                 <div className="chart-box">
-                  <ResponsiveContainer>
+                  <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={260}>
                     <PieChart>
                       <Pie
                         data={pieData}
@@ -1766,7 +1858,7 @@ function App() {
             <article className="panel">
               <h3>Income vs Expense Trend</h3>
               <div className="chart-box">
-                <ResponsiveContainer>
+                <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={260}>
                   <BarChart data={incomeVsExpenseTrend}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="period" />
@@ -1783,7 +1875,7 @@ function App() {
             <article className="panel">
               <h3>Daily Expense Trend</h3>
               <div className="chart-box">
-                <ResponsiveContainer>
+                <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={260}>
                   <LineChart data={dailyTrend}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="day" />
@@ -1803,7 +1895,7 @@ function App() {
             <article className="panel">
               <h3>Savings Rate Trend</h3>
               <div className="chart-box">
-                <ResponsiveContainer>
+                <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={260}>
                   <LineChart data={savingsTrend}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="period" />
@@ -1823,7 +1915,7 @@ function App() {
             <article className="panel panel-wide">
               <h3>Cash Flow</h3>
               <div className="chart-box">
-                <ResponsiveContainer>
+                <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={260}>
                   <LineChart data={cashflowTrend}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="period" />
