@@ -261,7 +261,7 @@ const now = new Date()
 
 const sessionStorageKey = 'spendsmart.session.v1'
 
-const piePalette = ['#d9472b', '#ef8d32', '#ffd166', '#2a9d8f', '#3478f6', '#7e58b6']
+const piePalette = ['#0f2a3d', '#c9a15b', '#6cc3a0', '#7aa6c7', '#7e58b6', '#e6f2f8']
 
 const defaultExpenseForm: ExpenseForm = {
   title: '',
@@ -289,7 +289,7 @@ const defaultCategoryForm: CategoryForm = {
   name: '',
   type: 'EXPENSE',
   icon: '📁',
-  colorCode: '#ef8d32',
+  colorCode: '#c9a15b',
 }
 
 const defaultBudgetForm: BudgetForm = {
@@ -1199,7 +1199,7 @@ function App() {
       name: category.name,
       type: category.type,
       icon: category.icon || '📁',
-      colorCode: category.colorCode || '#ef8d32',
+      colorCode: category.colorCode || '#c9a15b',
     })
   }
 
@@ -1865,8 +1865,8 @@ function App() {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Bar dataKey="income" fill="#2a9d8f" radius={[8, 8, 0, 0]} />
-                    <Bar dataKey="expense" fill="#d9472b" radius={[8, 8, 0, 0]} />
+                    <Bar dataKey="income" fill="#6cc3a0" radius={[8, 8, 0, 0]} />
+                    <Bar dataKey="expense" fill="#cf5560" radius={[8, 8, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -1883,7 +1883,7 @@ function App() {
                     <Tooltip />
                     <Line
                       dataKey="expense"
-                      stroke="#d9472b"
+                      stroke="#cf5560"
                       strokeWidth={3}
                       type="monotone"
                     />
@@ -1903,7 +1903,7 @@ function App() {
                     <Tooltip />
                     <Line
                       dataKey="savingsRate"
-                      stroke="#3478f6"
+                      stroke="#7aa6c7"
                       strokeWidth={3}
                       type="monotone"
                     />
@@ -1922,9 +1922,9 @@ function App() {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Line dataKey="inflow" stroke="#2a9d8f" strokeWidth={3} type="monotone" />
-                    <Line dataKey="outflow" stroke="#d9472b" strokeWidth={3} type="monotone" />
-                    <Line dataKey="net" stroke="#3478f6" strokeWidth={3} type="monotone" />
+                    <Line dataKey="inflow" stroke="#6cc3a0" strokeWidth={3} type="monotone" />
+                    <Line dataKey="outflow" stroke="#cf5560" strokeWidth={3} type="monotone" />
+                    <Line dataKey="net" stroke="#7aa6c7" strokeWidth={3} type="monotone" />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
