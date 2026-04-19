@@ -15,10 +15,19 @@ body {
   font-family: var(--font-family-base);
   line-height: 1.5;
   color: var(--color-text);
-  background:
-    radial-gradient(circle at 14% 8%, rgba(200, 76, 27, 0.16), transparent 36%),
-    radial-gradient(circle at 88% 16%, rgba(24, 118, 74, 0.1), transparent 28%),
-    linear-gradient(180deg, #fbf6ee 0%, var(--color-bg) 48%, #f3eadb 100%);
+  /* Subtle neutral background with soft vignette for premium feel */
+  background: linear-gradient(180deg, #fbfcfd 0%, var(--color-bg) 48%, #f0f4f7 100%);
+  background-attachment: fixed;
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle at 6% 10%, color-mix(in srgb, var(--color-primary) 8%, transparent 92%), transparent 24%), radial-gradient(circle at 94% 88%, color-mix(in srgb, var(--color-primary) 6%, transparent 94%), transparent 28%);
+  opacity: 0.95;
 }
 
 button,
@@ -26,4 +35,11 @@ input,
 select,
 textarea {
   font: inherit;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-family-display);
+  letter-spacing: -0.02em;
 }

@@ -33,10 +33,23 @@
   - Added gateway base URL support via `VITE_API_BASE_URL` with local fallback.
   - Mapped all service endpoints to `/api/*` gateway routes for auth, expense, income, category, budget, analytics, recurring, and notification.
 - Updated `.env.example` and README integration notes to document gateway-first API usage.
+- Added OAuth2 frontend login integration:
+  - Added "Continue with Google" and "Continue with GitHub" actions on the login panel.
+  - Implemented `/oauth/callback/google` and `/oauth/callback/github` callback handling in `App.tsx`.
+  - Callback flow now exchanges authorization code with backend and persists app session.
+- Upgraded dashboard chart rendering resilience:
+  - Added explicit chart container dimensions (`width`, `height`, `minWidth`, `minHeight`) to remove Recharts size warnings.
+- Revamped the visual system for a higher-fidelity product finish:
+  - Enhanced typography stack and display styling.
+  - Stronger hero gradients, elevated panel styling, refined card interactions.
+  - Improved tab/button motion, chart canvas styling, and OAuth button treatments.
 
 ## Verification
 - `npm install`
 - `npm run build`
+  - Result: `vite build` successful
+- Post revamp + OAuth verification:
+  - `npm run build`
   - Result: `vite build` successful
 
 ## Next Branch Origin

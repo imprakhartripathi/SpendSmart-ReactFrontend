@@ -48,7 +48,7 @@ type UserProfile = {
   timezone: string
   avatarUrl: string
   bio: string
-  provider: 'LOCAL' | 'GOOGLE'
+  provider: 'LOCAL' | 'GOOGLE' | 'GITHUB'
   active: boolean
   createdAt: string
   monthlyBudget: number
@@ -145,10 +145,12 @@ type Notification = {
   notificationId: number
   recipientId: number
   type:
+    | 'WELCOME'
     | 'BUDGET_ALERT'
     | 'RECURRING_DUE'
     | 'MONTHLY_SUMMARY'
     | 'BUDGET_EXCEEDED'
+    | 'BIG_EXPENSE_ALERT'
     | 'SYSTEM'
   severity: 'INFO' | 'WARNING' | 'CRITICAL'
   title: string
@@ -259,7 +261,7 @@ const now = new Date()
 
 const sessionStorageKey = 'spendsmart.session.v1'
 
-const piePalette = ['#d9472b', '#ef8d32', '#ffd166', '#2a9d8f', '#3478f6', '#7e58b6']
+const piePalette = ['#0f2a3d', '#c9a15b', '#6cc3a0', '#7aa6c7', '#7e58b6', '#e6f2f8']
 
 const defaultExpenseForm: ExpenseForm = {
   title: '',
@@ -287,7 +289,7 @@ const defaultCategoryForm: CategoryForm = {
   name: '',
   type: 'EXPENSE',
   icon: '📁',
-  colorCode: '#ef8d32',
+  colorCode: '#c9a15b',
 }
 
 const defaultBudgetForm: BudgetForm = {
@@ -856,6 +858,75 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [analyticsYear, analyticsMonth, analyticsTrailingMonths, profile?.monthlyBudget])
 
+  useEffect(() => {
+    if (session) return
+
+    const match = window.location.pathname.match(/^\/oauth\/callback\/(google|github)$/i)
+    if (!match) return
+
+    const provider = match[1].toLowerCase()
+    const search = new URLSearchParams(window.location.search)
+    const code = search.get('code')
+    const oauthError = search.get('error')
+
+    if (oauthError) {
+      setFlash({ kind: 'error', text: `OAuth login failed: ${oauthError}` })
+      window.history.replaceState({}, '', '/')
+      return
+    }
+
+    if (!code) {
+      setFlash({ kind: 'error', text: 'OAuth login failed: authorization code missing.' })
+      window.history.replaceState({}, '', '/')
+      return
+    }
+
+    void (async () => {
+      setWorking(true)
+      try {
+        const response = await runApi<{ token: string; userId: number; email: string }>(
+          'auth',
+          'POST',
+          `/auth/oauth2/callback/${provider}`,
+          undefined,
+          { code },
+        )
+
+        persistSession({
+          token: response.token,
+          userId: response.userId,
+          email: response.email,
+        })
+        setFlash({ kind: 'success', text: 'OAuth login successful' })
+      } catch (error) {
+        showError(error, 'OAuth login failed')
+      } finally {
+        setWorking(false)
+        window.history.replaceState({}, '', '/')
+      }
+    })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session])
+
+  const startOAuthLogin = async (provider: 'google' | 'github') => {
+    setWorking(true)
+    try {
+      const response = await runApi<{ authorizationUrl: string }>(
+        'auth',
+        'GET',
+        `/auth/oauth2/authorize/${provider}`,
+      )
+
+      if (!response.authorizationUrl) {
+        throw new Error('Authorization URL was not returned')
+      }
+      window.location.href = response.authorizationUrl
+    } catch (error) {
+      showError(error, `Unable to start ${provider} login`)
+      setWorking(false)
+    }
+  }
+
   const onLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setWorking(true)
@@ -1128,7 +1199,7 @@ function App() {
       name: category.name,
       type: category.type,
       icon: category.icon || '📁',
-      colorCode: category.colorCode || '#ef8d32',
+      colorCode: category.colorCode || '#c9a15b',
     })
   }
 
@@ -1568,6 +1639,27 @@ function App() {
                 {working ? 'Working...' : 'Login'}
               </button>
             </form>
+            <div className="oauth-stack">
+              <p className="muted">Or continue with</p>
+              <div className="oauth-buttons">
+                <button
+                  className="button-oauth button-google"
+                  disabled={working}
+                  onClick={() => void startOAuthLogin('google')}
+                  type="button"
+                >
+                  Google
+                </button>
+                <button
+                  className="button-oauth button-github"
+                  disabled={working}
+                  onClick={() => void startOAuthLogin('github')}
+                  type="button"
+                >
+                  GitHub
+                </button>
+              </div>
+            </div>
           </article>
 
           <article className="panel">
@@ -1742,7 +1834,7 @@ function App() {
                 <p className="muted">No category data for selected month.</p>
               ) : (
                 <div className="chart-box">
-                  <ResponsiveContainer>
+                  <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={260}>
                     <PieChart>
                       <Pie
                         data={pieData}
@@ -1766,15 +1858,15 @@ function App() {
             <article className="panel">
               <h3>Income vs Expense Trend</h3>
               <div className="chart-box">
-                <ResponsiveContainer>
+                <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={260}>
                   <BarChart data={incomeVsExpenseTrend}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="period" />
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Bar dataKey="income" fill="#2a9d8f" radius={[8, 8, 0, 0]} />
-                    <Bar dataKey="expense" fill="#d9472b" radius={[8, 8, 0, 0]} />
+                    <Bar dataKey="income" fill="#6cc3a0" radius={[8, 8, 0, 0]} />
+                    <Bar dataKey="expense" fill="#cf5560" radius={[8, 8, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -1783,7 +1875,7 @@ function App() {
             <article className="panel">
               <h3>Daily Expense Trend</h3>
               <div className="chart-box">
-                <ResponsiveContainer>
+                <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={260}>
                   <LineChart data={dailyTrend}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="day" />
@@ -1791,7 +1883,7 @@ function App() {
                     <Tooltip />
                     <Line
                       dataKey="expense"
-                      stroke="#d9472b"
+                      stroke="#cf5560"
                       strokeWidth={3}
                       type="monotone"
                     />
@@ -1803,7 +1895,7 @@ function App() {
             <article className="panel">
               <h3>Savings Rate Trend</h3>
               <div className="chart-box">
-                <ResponsiveContainer>
+                <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={260}>
                   <LineChart data={savingsTrend}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="period" />
@@ -1811,7 +1903,7 @@ function App() {
                     <Tooltip />
                     <Line
                       dataKey="savingsRate"
-                      stroke="#3478f6"
+                      stroke="#7aa6c7"
                       strokeWidth={3}
                       type="monotone"
                     />
@@ -1823,16 +1915,16 @@ function App() {
             <article className="panel panel-wide">
               <h3>Cash Flow</h3>
               <div className="chart-box">
-                <ResponsiveContainer>
+                <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={260}>
                   <LineChart data={cashflowTrend}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="period" />
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Line dataKey="inflow" stroke="#2a9d8f" strokeWidth={3} type="monotone" />
-                    <Line dataKey="outflow" stroke="#d9472b" strokeWidth={3} type="monotone" />
-                    <Line dataKey="net" stroke="#3478f6" strokeWidth={3} type="monotone" />
+                    <Line dataKey="inflow" stroke="#6cc3a0" strokeWidth={3} type="monotone" />
+                    <Line dataKey="outflow" stroke="#cf5560" strokeWidth={3} type="monotone" />
+                    <Line dataKey="net" stroke="#7aa6c7" strokeWidth={3} type="monotone" />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
