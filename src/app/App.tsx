@@ -1,267 +1,59 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import type { FormEvent } from 'react'
 import axios, { type Method } from 'axios'
 import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Legend,
-  Line,
-  LineChart,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+} from 'react-router-dom'
+import AppShell from '@/app/components/AppShell'
+import BudgetDetail from '@/app/pages/BudgetDetail'
+import BudgetsPage from '@/app/pages/Budgets'
+import CategoriesPage from '@/app/pages/Categories'
+import CategoryDetail from '@/app/pages/CategoryDetail'
+import ExpenseDetail from '@/app/pages/ExpenseDetail'
+import ExpensesPage from '@/app/pages/Expenses'
+import IncomeDetail from '@/app/pages/IncomeDetail'
+import IncomePage from '@/app/pages/Income'
+import NotificationsPage from '@/app/pages/Notifications'
+import Landing from '@/app/pages/Landing'
+import LoginPage from '@/app/pages/Login'
+import Overview from '@/app/pages/Overview'
+import ProfilePage from '@/app/pages/Profile'
+import OAuthCallback from '@/app/pages/OAuthCallback'
+import RecurringDetail from '@/app/pages/RecurringDetail'
+import RecurringPage from '@/app/pages/Recurring'
+import SignupPage from '@/app/pages/Signup'
 import { config } from '@/config/config'
+import type {
+  Budget,
+  BudgetForm,
+  BudgetProgress,
+  BreakdownRow,
+  Category,
+  CategoryForm,
+  DailyTrendRow,
+  Expense,
+  ExpenseForm,
+  Flash,
+  Income,
+  IncomeForm,
+  MonthlySummary,
+  Notification,
+  RecurringForm,
+  RecurringRule,
+  Session,
+  SummaryCard,
+  TrendRow,
+  UserProfile,
+} from '@/app/types'
 
 type ServiceKey = keyof typeof config.api.services
 
-type TabKey =
-  | 'overview'
-  | 'expenses'
-  | 'income'
-  | 'categories'
-  | 'budgets'
-  | 'recurring'
-  | 'notifications'
-  | 'profile'
-
-type Flash = {
-  kind: 'success' | 'error'
-  text: string
-}
-
-type Session = {
-  token: string
-  userId: number
-  email: string
-}
-
-type UserProfile = {
-  userId: number
-  fullName: string
-  email: string
-  currency: string
-  timezone: string
-  avatarUrl: string
-  bio: string
-  provider: 'LOCAL' | 'GOOGLE' | 'GITHUB'
-  active: boolean
-  createdAt: string
-  monthlyBudget: number
-}
-
-type Expense = {
-  expenseId: number
-  userId: number
-  categoryId: number
-  title: string
-  amount: number
-  currency: string
-  type: 'EXPENSE' | 'SPLIT'
-  paymentMethod: 'CASH' | 'CARD' | 'UPI' | 'BANK' | 'WALLET'
-  date: string
-  notes: string
-  receiptUrl: string
-  recurring: boolean
-}
-
-type Income = {
-  incomeId: number
-  userId: number
-  categoryId: number
-  title: string
-  amount: number
-  currency: string
-  source:
-    | 'SALARY'
-    | 'FREELANCE'
-    | 'BUSINESS'
-    | 'INVESTMENT'
-    | 'GIFT'
-    | 'OTHER'
-  date: string
-  notes: string
-  recurring: boolean
-  recurrencePeriod?: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY'
-}
-
-type Category = {
-  categoryId: number
-  userId: number
-  name: string
-  type: 'EXPENSE' | 'INCOME'
-  icon: string
-  colorCode: string
-  budgetLimit?: number
-  defaultCategory: boolean
-}
-
-type Budget = {
-  budgetId: number
-  userId: number
-  categoryId?: number
-  name: string
-  limitAmount: number
-  currency: string
-  period: 'MONTHLY' | 'WEEKLY' | 'CUSTOM'
-  startDate?: string
-  endDate?: string
-  spentAmount: number
-  alertThreshold: number
-  active: boolean
-}
-
-type BudgetProgress = {
-  budgetId: number
-  limitAmount: number
-  spentAmount: number
-  percentageUsed: number
-  remainingAmount: number
-  thresholdReached: boolean
-  exceeded: boolean
-}
-
-type RecurringRule = {
-  recurringId: number
-  userId: number
-  categoryId: number
-  title: string
-  amount: number
-  type: 'EXPENSE' | 'INCOME'
-  frequency: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY'
-  startDate: string
-  endDate?: string
-  nextDueDate: string
-  active: boolean
-  description: string
-  paymentMethod: 'CASH' | 'CARD' | 'UPI' | 'BANK' | 'WALLET'
-}
-
-type Notification = {
-  notificationId: number
-  recipientId: number
-  type:
-    | 'WELCOME'
-    | 'BUDGET_ALERT'
-    | 'RECURRING_DUE'
-    | 'MONTHLY_SUMMARY'
-    | 'BUDGET_EXCEEDED'
-    | 'BIG_EXPENSE_ALERT'
-    | 'SYSTEM'
-  severity: 'INFO' | 'WARNING' | 'CRITICAL'
-  title: string
-  message: string
-  relatedId?: number
-  relatedType?: string
-  read: boolean
-  acknowledged: boolean
-  createdAt: string
-}
-
-type SummaryCard = {
-  label: string
-  value: string
-  tone?: 'good' | 'bad' | 'neutral'
-}
-
-type MonthlySummary = {
-  totalIncome: number
-  totalExpenses: number
-  netSavings: number
-  savingsRate: number
-  topCategory: string
-}
-
-type TrendRow = {
-  period: string
-  income?: number
-  expense?: number
-  inflow?: number
-  outflow?: number
-  net?: number
-  savingsRate?: number
-}
-
-type BreakdownRow = {
-  category: string
-  amount: number
-}
-
-type DailyTrendRow = {
-  day: number
-  expense: number
-}
-
-type ExpenseForm = {
-  title: string
-  amount: string
-  categoryId: string
-  date: string
-  paymentMethod: Expense['paymentMethod']
-  notes: string
-  receiptUrl: string
-  recurring: boolean
-}
-
-type IncomeForm = {
-  title: string
-  amount: string
-  categoryId: string
-  source: Income['source']
-  date: string
-  notes: string
-  recurring: boolean
-  recurrencePeriod: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY'
-}
-
-type CategoryForm = {
-  name: string
-  type: Category['type']
-  icon: string
-  colorCode: string
-}
-
-type BudgetForm = {
-  name: string
-  categoryId: string
-  limitAmount: string
-  period: Budget['period']
-  alertThreshold: string
-  startDate: string
-  endDate: string
-  active: boolean
-}
-
-type RecurringForm = {
-  title: string
-  amount: string
-  categoryId: string
-  type: RecurringRule['type']
-  frequency: RecurringRule['frequency']
-  startDate: string
-  endDate: string
-  nextDueDate: string
-  paymentMethod: RecurringRule['paymentMethod']
-  description: string
-  active: boolean
-}
-
-const currencyFormatter = new Intl.NumberFormat(undefined, {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 2,
-})
-
 const today = new Date().toISOString().slice(0, 10)
 const now = new Date()
-
 const sessionStorageKey = 'spendsmart.session.v1'
-
-const piePalette = ['#0f2a3d', '#c9a15b', '#6cc3a0', '#7aa6c7', '#7e58b6', '#e6f2f8']
 
 const defaultExpenseForm: ExpenseForm = {
   title: '',
@@ -289,7 +81,7 @@ const defaultCategoryForm: CategoryForm = {
   name: '',
   type: 'EXPENSE',
   icon: '📁',
-  colorCode: '#c9a15b',
+  colorCode: '#18c29c',
 }
 
 const defaultBudgetForm: BudgetForm = {
@@ -316,6 +108,12 @@ const defaultRecurringForm: RecurringForm = {
   description: '',
   active: true,
 }
+
+const currencyFormatter = new Intl.NumberFormat(undefined, {
+  style: 'currency',
+  currency: 'USD',
+  maximumFractionDigits: 2,
+})
 
 const readSession = (): Session | null => {
   const raw = localStorage.getItem(sessionStorageKey)
@@ -357,7 +155,6 @@ function App() {
   const services = config.api.services
 
   const [session, setSession] = useState<Session | null>(() => readSession())
-  const [activeTab, setActiveTab] = useState<TabKey>('overview')
   const [flash, setFlash] = useState<Flash | null>(null)
   const [working, setWorking] = useState(false)
 
@@ -420,9 +217,10 @@ function App() {
   const [forecastValue, setForecastValue] = useState(0)
   const [healthScore, setHealthScore] = useState<number | null>(null)
 
-  const categoryNameMap = useMemo(() => {
-    return new Map(categories.map((category) => [category.categoryId, category.name]))
-  }, [categories])
+  const categoryNameMap = useMemo(
+    () => new Map(categories.map((category) => [category.categoryId, category.name])),
+    [categories],
+  )
 
   const expenseCategories = useMemo(
     () => categories.filter((category) => category.type === 'EXPENSE'),
@@ -439,10 +237,37 @@ function App() {
     [notifications],
   )
 
+  const resolveCategoryLabel = useCallback(
+    (value: unknown) => {
+      if (typeof value === 'number' && Number.isFinite(value)) {
+        return categoryNameMap.get(value) || `Category ${value}`
+      }
+
+      if (typeof value === 'string') {
+        const numericMatch = value.match(/^category-(\d+)$/i)
+        if (numericMatch) {
+          const categoryId = Number(numericMatch[1])
+          return categoryNameMap.get(categoryId) || value
+        }
+
+        if (/^\d+$/.test(value)) {
+          const categoryId = Number(value)
+          return categoryNameMap.get(categoryId) || `Category ${value}`
+        }
+
+        return value
+      }
+
+      return 'Uncategorised'
+    },
+    [categoryNameMap],
+  )
+
   const overviewCards = useMemo<SummaryCard[]>(() => {
     if (!monthlySummary) return []
 
     const currency = profile?.currency || 'USD'
+
     return [
       {
         label: 'Monthly Income',
@@ -474,7 +299,7 @@ function App() {
       },
       {
         label: 'Top Spend Category',
-        value: monthlySummary.topCategory,
+        value: resolveCategoryLabel(monthlySummary.topCategory || topCategories[0]?.category || 'Uncategorised'),
       },
       {
         label: 'Unread Notifications',
@@ -482,7 +307,7 @@ function App() {
         tone: unreadCount > 0 ? 'bad' : 'good',
       },
     ]
-  }, [forecastValue, healthScore, monthlySummary, profile?.currency, unreadCount])
+  }, [forecastValue, healthScore, monthlySummary, profile?.currency, unreadCount, resolveCategoryLabel])
 
   const pieData = useMemo(() => {
     return categoryBreakdown
@@ -501,6 +326,16 @@ function App() {
       })
       .filter((item) => item.value > 0)
   }, [categoryBreakdown, categoryNameMap])
+
+  const recentExpenses = useMemo(
+    () => [...expenses].slice(0, 8),
+    [expenses],
+  )
+
+  const recentIncomes = useMemo(
+    () => [...incomes].slice(0, 8),
+    [incomes],
+  )
 
   const runApi = async <T,>(
     service: ServiceKey,
@@ -534,6 +369,7 @@ function App() {
         setFlash({ kind: 'error', text: responseData })
         return
       }
+
       if (
         responseData &&
         typeof responseData === 'object' &&
@@ -543,6 +379,7 @@ function App() {
         setFlash({ kind: 'error', text: (responseData as { message: string }).message })
         return
       }
+
       setFlash({ kind: 'error', text: `${fallbackMessage} (${error.message})` })
       return
     }
@@ -556,6 +393,7 @@ function App() {
     } else {
       localStorage.removeItem(sessionStorageKey)
     }
+
     setSession(nextSession)
   }
 
@@ -639,12 +477,7 @@ function App() {
       })),
     )
 
-    const alerts = await runApi<BudgetProgress[]>(
-      'budget',
-      'GET',
-      `/budgets/alerts/${userId}`,
-    )
-
+    const alerts = await runApi<BudgetProgress[]>('budget', 'GET', `/budgets/alerts/${userId}`)
     setBudgetAlerts(
       alerts.map((alert) => ({
         ...alert,
@@ -693,79 +526,84 @@ function App() {
     const trailingMonths = Number(analyticsTrailingMonths)
     const monthlyBudgetGoal = toNumber(profile?.monthlyBudget)
 
-    const [summaryRaw, breakdownRaw, trendRaw, dailyRaw, savingsRaw, cashflowRaw, topRaw, forecastRaw] =
-      await Promise.all([
-        runApi<Record<string, unknown>>('analytics', 'GET', '/analytics/monthlySummary', {
+    const [
+      summaryRaw,
+      breakdownRaw,
+      trendRaw,
+      dailyRaw,
+      savingsRaw,
+      cashflowRaw,
+      topRaw,
+      forecastRaw,
+    ] = await Promise.all([
+      runApi<Record<string, unknown>>('analytics', 'GET', '/analytics/monthlySummary', {
+        userId,
+        year,
+        month,
+      }),
+      runApi<Record<string, unknown>[]>(
+        'analytics',
+        'GET',
+        '/analytics/categoryBreakdown',
+        {
           userId,
           year,
           month,
-        }),
-        runApi<Record<string, unknown>[]>(
-          'analytics',
-          'GET',
-          '/analytics/categoryBreakdown',
-          {
-            userId,
-            year,
-            month,
-          },
-        ),
-        runApi<Record<string, unknown>[]>(
-          'analytics',
-          'GET',
-          '/analytics/incomeVsExpense',
-          {
-            userId,
-            trailingMonths,
-          },
-        ),
-        runApi<Record<string, unknown>[]>('analytics', 'GET', '/analytics/dailyTrend', {
-          userId,
-          year,
-          month,
-        }),
-        runApi<Record<string, unknown>[]>(
-          'analytics',
-          'GET',
-          '/analytics/savingsRate',
-          {
-            userId,
-            trailingMonths,
-          },
-        ),
-        runApi<Record<string, unknown>[]>('analytics', 'GET', '/analytics/cashflow', {
+        },
+      ),
+      runApi<Record<string, unknown>[]>(
+        'analytics',
+        'GET',
+        '/analytics/incomeVsExpense',
+        {
           userId,
           trailingMonths,
-        }),
-        runApi<Record<string, unknown>[]>(
-          'analytics',
-          'GET',
-          '/analytics/topCategories',
-          {
-            userId,
-            year,
-            month,
-          },
-        ),
-        runApi<Record<string, unknown>>('analytics', 'GET', '/analytics/forecast', {
+        },
+      ),
+      runApi<Record<string, unknown>[]>('analytics', 'GET', '/analytics/dailyTrend', {
+        userId,
+        year,
+        month,
+      }),
+      runApi<Record<string, unknown>[]>(
+        'analytics',
+        'GET',
+        '/analytics/savingsRate',
+        {
           userId,
-        }),
-      ])
+          trailingMonths,
+        },
+      ),
+      runApi<Record<string, unknown>[]>('analytics', 'GET', '/analytics/cashflow', {
+        userId,
+        trailingMonths,
+      }),
+      runApi<Record<string, unknown>[]>(
+        'analytics',
+        'GET',
+        '/analytics/topCategories',
+        {
+          userId,
+          year,
+          month,
+        },
+      ),
+      runApi<Record<string, unknown>>('analytics', 'GET', '/analytics/forecast', {
+        userId,
+      }),
+    ])
 
     setMonthlySummary({
       totalIncome: toNumber(summaryRaw.totalIncome),
       totalExpenses: toNumber(summaryRaw.totalExpenses),
       netSavings: toNumber(summaryRaw.netSavings),
       savingsRate: toNumber(summaryRaw.savingsRate),
-      topCategory:
-        typeof summaryRaw.topCategory === 'string'
-          ? summaryRaw.topCategory
-          : 'Uncategorised',
+      topCategory: resolveCategoryLabel(summaryRaw.topCategory),
     })
 
     setCategoryBreakdown(
       breakdownRaw.map((row) => ({
-        category: String(row.category ?? 'category-unknown'),
+        category: resolveCategoryLabel(row.category),
         amount: toNumber(row.amount),
       })),
     )
@@ -803,7 +641,7 @@ function App() {
 
     setTopCategories(
       topRaw.map((row) => ({
-        category: String(row.category ?? 'unknown'),
+        category: resolveCategoryLabel(row.category),
         amount: toNumber(row.amount),
       })),
     )
@@ -902,7 +740,6 @@ function App() {
         showError(error, 'OAuth login failed')
       } finally {
         setWorking(false)
-        window.history.replaceState({}, '', '/')
       }
     })()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -927,7 +764,7 @@ function App() {
     }
   }
 
-  const onLogin = async (event: React.FormEvent<HTMLFormElement>) => {
+  const onLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setWorking(true)
     try {
@@ -956,7 +793,7 @@ function App() {
     }
   }
 
-  const onRegister = async (event: React.FormEvent<HTMLFormElement>) => {
+  const onRegister = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setWorking(true)
     try {
@@ -986,7 +823,7 @@ function App() {
     try {
       await runApi('auth', 'POST', '/auth/logout', undefined, { token: session.token })
     } catch {
-      // no-op; local logout should still happen.
+      // Local logout should still happen.
     }
 
     persistSession(null)
@@ -1001,7 +838,7 @@ function App() {
     setFlash({ kind: 'success', text: 'Logged out' })
   }
 
-  const saveExpense = async (event: React.FormEvent<HTMLFormElement>) => {
+  const saveExpense = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!session) return
 
@@ -1080,7 +917,7 @@ function App() {
     }
   }
 
-  const saveIncome = async (event: React.FormEvent<HTMLFormElement>) => {
+  const saveIncome = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!session) return
 
@@ -1150,7 +987,7 @@ function App() {
     }
   }
 
-  const saveCategory = async (event: React.FormEvent<HTMLFormElement>) => {
+  const saveCategory = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!session) return
 
@@ -1171,20 +1008,14 @@ function App() {
     setWorking(true)
     try {
       if (editingCategoryId) {
-        await runApi(
-          'category',
-          'PUT',
-          `/categories/${editingCategoryId}`,
-          undefined,
-          payload,
-        )
+        await runApi('category', 'PUT', `/categories/${editingCategoryId}`, undefined, payload)
       } else {
         await runApi('category', 'POST', '/categories', undefined, payload)
       }
 
       setCategoryForm(defaultCategoryForm)
       setEditingCategoryId(null)
-      await fetchCategories(session.userId)
+      await Promise.all([fetchCategories(session.userId), fetchBudgets(session.userId), fetchDashboard(session.userId)])
       setFlash({ kind: 'success', text: 'Category saved' })
     } catch (error) {
       showError(error, 'Could not save category')
@@ -1199,7 +1030,7 @@ function App() {
       name: category.name,
       type: category.type,
       icon: category.icon || '📁',
-      colorCode: category.colorCode || '#c9a15b',
+      colorCode: category.colorCode || '#18c29c',
     })
   }
 
@@ -1209,7 +1040,7 @@ function App() {
     setWorking(true)
     try {
       await runApi('category', 'DELETE', `/categories/${categoryId}`)
-      await fetchCategories(session.userId)
+      await Promise.all([fetchCategories(session.userId), fetchDashboard(session.userId)])
       setFlash({ kind: 'success', text: 'Category deleted' })
     } catch (error) {
       showError(error, 'Could not delete category')
@@ -1224,7 +1055,7 @@ function App() {
     setWorking(true)
     try {
       await runApi('category', 'POST', `/categories/defaults/init/${session.userId}`)
-      await fetchCategories(session.userId)
+      await Promise.all([fetchCategories(session.userId), fetchDashboard(session.userId)])
       setFlash({ kind: 'success', text: 'Default categories initialized' })
     } catch (error) {
       showError(error, 'Could not initialize default categories')
@@ -1233,7 +1064,7 @@ function App() {
     }
   }
 
-  const saveBudget = async (event: React.FormEvent<HTMLFormElement>) => {
+  const saveBudget = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!session) return
 
@@ -1318,7 +1149,7 @@ function App() {
     }
   }
 
-  const saveRecurring = async (event: React.FormEvent<HTMLFormElement>) => {
+  const saveRecurring = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!session) return
 
@@ -1348,20 +1179,14 @@ function App() {
     setWorking(true)
     try {
       if (editingRecurringId) {
-        await runApi(
-          'recurring',
-          'PUT',
-          `/recurring/${editingRecurringId}`,
-          undefined,
-          payload,
-        )
+        await runApi('recurring', 'PUT', `/recurring/${editingRecurringId}`, undefined, payload)
       } else {
         await runApi('recurring', 'POST', '/recurring', undefined, payload)
       }
 
       setRecurringForm(defaultRecurringForm)
       setEditingRecurringId(null)
-      await fetchRecurring(session.userId)
+      await Promise.all([fetchRecurring(session.userId), fetchDashboard(session.userId)])
       setFlash({ kind: 'success', text: 'Recurring rule saved' })
     } catch (error) {
       showError(error, 'Could not save recurring rule')
@@ -1495,7 +1320,7 @@ function App() {
     }
   }
 
-  const updateProfile = async (event: React.FormEvent<HTMLFormElement>) => {
+  const updateProfile = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!session) return
 
@@ -1596,1513 +1421,174 @@ function App() {
 
   const primaryCurrency = profile?.currency || 'USD'
 
-  if (!session) {
-    return (
-      <main className="app-shell app-auth-shell">
-        <header className="hero">
-          <p className="hero-kicker">SpendSmart Case Study Implementation</p>
-          <h1>Track. Visualize. Save. Grow.</h1>
-          <p>
-            Production-style frontend wired to all 8 backend services: Auth,
-            Expense, Income, Category, Budget, Analytics, Recurring, and
-            Notifications.
-          </p>
-        </header>
+  const dashboardData = {
+    sessionUserId: session?.userId ?? 0,
+    profile,
+    primaryCurrency,
+    categoryNameMap,
+    resolveCategoryLabel,
+    expenseCategories,
+    incomeCategories,
+    unreadCount,
+    overviewCards,
+    pieData,
+    monthlySummary,
+    forecastValue,
+    healthScore,
+    recentExpenses,
+    recentIncomes,
+    expenses,
+    incomes,
+    categories,
+    budgets,
+    budgetAlerts,
+    recurringRules,
+    upcomingRecurring,
+    notifications,
+    analyticsYear,
+    analyticsMonth,
+    analyticsTrailingMonths,
+    setAnalyticsYear,
+    setAnalyticsMonth,
+    setAnalyticsTrailingMonths,
+    incomeVsExpenseTrend,
+    dailyTrend,
+    savingsTrend,
+    cashflowTrend,
+    topCategories,
+    expenseForm,
+    setExpenseForm,
+    saveExpense,
+    editExpense,
+    removeExpense,
+    expenseKeyword,
+    setExpenseKeyword,
+    fetchExpenses,
+    editingExpenseId,
+    setEditingExpenseId,
+    defaultExpenseForm,
+    incomeForm,
+    setIncomeForm,
+    saveIncome,
+    editIncome,
+    removeIncome,
+    incomeKeyword,
+    setIncomeKeyword,
+    fetchIncomes,
+    editingIncomeId,
+    setEditingIncomeId,
+    defaultIncomeForm,
+    categoryForm,
+    setCategoryForm,
+    saveCategory,
+    editCategory,
+    removeCategory,
+    initDefaultCategories,
+    editingCategoryId,
+    setEditingCategoryId,
+    defaultCategoryForm,
+    budgetForm,
+    setBudgetForm,
+    saveBudget,
+    editBudget,
+    removeBudget,
+    dispatchBudgetAlerts,
+    editingBudgetId,
+    setEditingBudgetId,
+    defaultBudgetForm,
+    recurringForm,
+    setRecurringForm,
+    saveRecurring,
+    editRecurring,
+    deactivateRecurring,
+    removeRecurring,
+    processRecurringNow,
+    editingRecurringId,
+    setEditingRecurringId,
+    defaultRecurringForm,
+    markNotificationRead,
+    acknowledgeNotification,
+    deleteNotification,
+    markAllRead,
+    profileName,
+    setProfileName,
+    profileEmail,
+    setProfileEmail,
+    profileTimezone,
+    setProfileTimezone,
+    profileAvatar,
+    setProfileAvatar,
+    profileBio,
+    setProfileBio,
+    profileCurrency,
+    setProfileCurrency,
+    profileMonthlyBudget,
+    setProfileMonthlyBudget,
+    updateProfile,
+    updateCurrency,
+    updateMonthlyBudget,
+    deactivateAccount,
+    working,
+    formatMoney,
+    session,
+  }
 
-        {flash ? (
-          <p className={`flash flash-${flash.kind}`}>{flash.text}</p>
-        ) : null}
-
-        <section className="auth-grid">
-          <article className="panel">
-            <h2>Login</h2>
-            <form className="stack" onSubmit={onLogin}>
-              <label>
-                Email
-                <input
-                  required
-                  type="email"
-                  value={loginEmail}
-                  onChange={(event) => setLoginEmail(event.target.value)}
-                />
-              </label>
-              <label>
-                Password
-                <input
-                  required
-                  type="password"
-                  value={loginPassword}
-                  onChange={(event) => setLoginPassword(event.target.value)}
-                />
-              </label>
-              <button disabled={working} type="submit">
-                {working ? 'Working...' : 'Login'}
-              </button>
-            </form>
-            <div className="oauth-stack">
-              <p className="muted">Or continue with</p>
-              <div className="oauth-buttons">
-                <button
-                  className="button-oauth button-google"
-                  disabled={working}
-                  onClick={() => void startOAuthLogin('google')}
-                  type="button"
-                >
-                  Google
-                </button>
-                <button
-                  className="button-oauth button-github"
-                  disabled={working}
-                  onClick={() => void startOAuthLogin('github')}
-                  type="button"
-                >
-                  GitHub
-                </button>
-              </div>
-            </div>
-          </article>
-
-          <article className="panel">
-            <h2>Register</h2>
-            <form className="stack" onSubmit={onRegister}>
-              <label>
-                Full Name
-                <input
-                  required
-                  value={registerFullName}
-                  onChange={(event) => setRegisterFullName(event.target.value)}
-                />
-              </label>
-              <label>
-                Email
-                <input
-                  required
-                  type="email"
-                  value={registerEmail}
-                  onChange={(event) => setRegisterEmail(event.target.value)}
-                />
-              </label>
-              <label>
-                Password
-                <input
-                  required
-                  type="password"
-                  value={registerPassword}
-                  onChange={(event) => setRegisterPassword(event.target.value)}
-                />
-              </label>
-              <div className="row row-2">
-                <label>
-                  Currency
-                  <select
-                    value={registerCurrency}
-                    onChange={(event) => setRegisterCurrency(event.target.value)}
-                  >
-                    {['USD', 'INR', 'EUR', 'GBP'].map((currency) => (
-                      <option key={currency} value={currency}>
-                        {currency}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  Timezone
-                  <input
-                    value={registerTimezone}
-                    onChange={(event) => setRegisterTimezone(event.target.value)}
-                  />
-                </label>
-              </div>
-              <label>
-                Monthly Budget Goal
-                <input
-                  min="0"
-                  step="0.01"
-                  type="number"
-                  value={registerMonthlyBudget}
-                  onChange={(event) =>
-                    setRegisterMonthlyBudget(event.target.value)
-                  }
-                />
-              </label>
-              <button disabled={working} type="submit">
-                {working ? 'Working...' : 'Create Account'}
-              </button>
-            </form>
-          </article>
-        </section>
-      </main>
-    )
+  const authData = {
+    loginEmail,
+    setLoginEmail,
+    loginPassword,
+    setLoginPassword,
+    onLogin,
+    startOAuthLogin,
+    registerFullName,
+    setRegisterFullName,
+    registerEmail,
+    setRegisterEmail,
+    registerPassword,
+    setRegisterPassword,
+    registerCurrency,
+    setRegisterCurrency,
+    registerTimezone,
+    setRegisterTimezone,
+    registerMonthlyBudget,
+    setRegisterMonthlyBudget,
+    onRegister,
+    working,
+    flash,
   }
 
   return (
-    <main className="app-shell">
-      <header className="hero hero-dashboard">
-        <div>
-          <p className="hero-kicker">SpendSmart Dashboard</p>
-          <h1>{profile?.fullName || session.email}</h1>
-          <p>
-            Functional end-to-end finance app with live microservice orchestration
-            and visualization.
-          </p>
-        </div>
-        <div className="hero-actions">
-          <span className="chip">
-            User #{session.userId} · {profile?.currency || 'USD'}
-          </span>
-          <button className="button-soft" disabled={working} onClick={onLogout} type="button">
-            Logout
-          </button>
-        </div>
-      </header>
-
-      {flash ? <p className={`flash flash-${flash.kind}`}>{flash.text}</p> : null}
-
-      <nav className="tab-row">
-        {(
-          [
-            ['overview', 'Overview'],
-            ['expenses', 'Expenses'],
-            ['income', 'Income'],
-            ['categories', 'Categories'],
-            ['budgets', 'Budgets'],
-            ['recurring', 'Recurring'],
-            ['notifications', `Notifications (${unreadCount})`],
-            ['profile', 'Profile'],
-          ] as Array<[TabKey, string]>
-        ).map(([tab, label]) => (
-          <button
-            className={tab === activeTab ? 'tab-active' : ''}
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            type="button"
-          >
-            {label}
-          </button>
-        ))}
-      </nav>
-
-      {activeTab === 'overview' ? (
-        <section className="stack-lg">
-          <article className="panel">
-            <h2>Analytics Controls</h2>
-            <div className="row row-3">
-              <label>
-                Year
-                <input
-                  type="number"
-                  value={analyticsYear}
-                  onChange={(event) => setAnalyticsYear(event.target.value)}
-                />
-              </label>
-              <label>
-                Month
-                <input
-                  max="12"
-                  min="1"
-                  type="number"
-                  value={analyticsMonth}
-                  onChange={(event) => setAnalyticsMonth(event.target.value)}
-                />
-              </label>
-              <label>
-                Trailing Months
-                <input
-                  max="24"
-                  min="1"
-                  type="number"
-                  value={analyticsTrailingMonths}
-                  onChange={(event) => setAnalyticsTrailingMonths(event.target.value)}
-                />
-              </label>
-            </div>
-          </article>
-
-          <section className="card-grid">
-            {overviewCards.map((card) => (
-              <article className={`stat-card tone-${card.tone || 'neutral'}`} key={card.label}>
-                <span>{card.label}</span>
-                <strong>{card.value}</strong>
-              </article>
-            ))}
-          </section>
-
-          <section className="chart-grid">
-            <article className="panel">
-              <h3>Category Breakdown</h3>
-              {pieData.length === 0 ? (
-                <p className="muted">No category data for selected month.</p>
-              ) : (
-                <div className="chart-box">
-                  <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={260}>
-                    <PieChart>
-                      <Pie
-                        data={pieData}
-                        dataKey="value"
-                        innerRadius={54}
-                        nameKey="name"
-                        outerRadius={95}
-                      >
-                        {pieData.map((slice, index) => (
-                          <Cell key={slice.name} fill={piePalette[index % piePalette.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
-            </article>
-
-            <article className="panel">
-              <h3>Income vs Expense Trend</h3>
-              <div className="chart-box">
-                <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={260}>
-                  <BarChart data={incomeVsExpenseTrend}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="period" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="income" fill="#6cc3a0" radius={[8, 8, 0, 0]} />
-                    <Bar dataKey="expense" fill="#cf5560" radius={[8, 8, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </article>
-
-            <article className="panel">
-              <h3>Daily Expense Trend</h3>
-              <div className="chart-box">
-                <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={260}>
-                  <LineChart data={dailyTrend}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="day" />
-                    <YAxis />
-                    <Tooltip />
-                    <Line
-                      dataKey="expense"
-                      stroke="#cf5560"
-                      strokeWidth={3}
-                      type="monotone"
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </article>
-
-            <article className="panel">
-              <h3>Savings Rate Trend</h3>
-              <div className="chart-box">
-                <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={260}>
-                  <LineChart data={savingsTrend}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="period" />
-                    <YAxis />
-                    <Tooltip />
-                    <Line
-                      dataKey="savingsRate"
-                      stroke="#7aa6c7"
-                      strokeWidth={3}
-                      type="monotone"
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </article>
-
-            <article className="panel panel-wide">
-              <h3>Cash Flow</h3>
-              <div className="chart-box">
-                <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={260}>
-                  <LineChart data={cashflowTrend}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="period" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line dataKey="inflow" stroke="#6cc3a0" strokeWidth={3} type="monotone" />
-                    <Line dataKey="outflow" stroke="#cf5560" strokeWidth={3} type="monotone" />
-                    <Line dataKey="net" stroke="#7aa6c7" strokeWidth={3} type="monotone" />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </article>
-          </section>
-
-          <article className="panel">
-            <h3>Top Spending Categories</h3>
-            <div className="list-grid">
-              {topCategories.length === 0 ? (
-                <p className="muted">No top category data yet.</p>
-              ) : (
-                topCategories.map((item) => (
-                  <div className="list-row" key={`${item.category}-${item.amount}`}>
-                    <span>{item.category}</span>
-                    <strong>{formatMoney(item.amount, primaryCurrency)}</strong>
-                  </div>
-                ))
-              )}
-            </div>
-          </article>
-        </section>
-      ) : null}
-
-      {activeTab === 'expenses' ? (
-        <section className="stack-lg">
-          <article className="panel">
-            <h2>{editingExpenseId ? 'Edit Expense' : 'Add Expense'}</h2>
-            <form className="stack" onSubmit={saveExpense}>
-              <div className="row row-3">
-                <label>
-                  Title
-                  <input
-                    required
-                    value={expenseForm.title}
-                    onChange={(event) =>
-                      setExpenseForm((prev) => ({ ...prev, title: event.target.value }))
-                    }
-                  />
-                </label>
-                <label>
-                  Amount
-                  <input
-                    min="0"
-                    required
-                    step="0.01"
-                    type="number"
-                    value={expenseForm.amount}
-                    onChange={(event) =>
-                      setExpenseForm((prev) => ({ ...prev, amount: event.target.value }))
-                    }
-                  />
-                </label>
-                <label>
-                  Category
-                  <select
-                    required
-                    value={expenseForm.categoryId}
-                    onChange={(event) =>
-                      setExpenseForm((prev) => ({ ...prev, categoryId: event.target.value }))
-                    }
-                  >
-                    <option value="">Select</option>
-                    {expenseCategories.map((category) => (
-                      <option key={category.categoryId} value={category.categoryId}>
-                        {category.icon} {category.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-              <div className="row row-3">
-                <label>
-                  Date
-                  <input
-                    required
-                    type="date"
-                    value={expenseForm.date}
-                    onChange={(event) =>
-                      setExpenseForm((prev) => ({ ...prev, date: event.target.value }))
-                    }
-                  />
-                </label>
-                <label>
-                  Payment Method
-                  <select
-                    value={expenseForm.paymentMethod}
-                    onChange={(event) =>
-                      setExpenseForm((prev) => ({
-                        ...prev,
-                        paymentMethod: event.target.value as Expense['paymentMethod'],
-                      }))
-                    }
-                  >
-                    {['CASH', 'CARD', 'UPI', 'BANK', 'WALLET'].map((method) => (
-                      <option key={method} value={method}>
-                        {method}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="checkbox-label">
-                  <input
-                    checked={expenseForm.recurring}
-                    onChange={(event) =>
-                      setExpenseForm((prev) => ({ ...prev, recurring: event.target.checked }))
-                    }
-                    type="checkbox"
-                  />
-                  Mark as recurring
-                </label>
-              </div>
-              <label>
-                Notes
-                <textarea
-                  rows={3}
-                  value={expenseForm.notes}
-                  onChange={(event) =>
-                    setExpenseForm((prev) => ({ ...prev, notes: event.target.value }))
-                  }
-                />
-              </label>
-              <label>
-                Receipt URL
-                <input
-                  placeholder="https://..."
-                  value={expenseForm.receiptUrl}
-                  onChange={(event) =>
-                    setExpenseForm((prev) => ({ ...prev, receiptUrl: event.target.value }))
-                  }
-                />
-              </label>
-              <div className="button-row">
-                <button disabled={working} type="submit">
-                  {working ? 'Saving...' : editingExpenseId ? 'Update Expense' : 'Add Expense'}
-                </button>
-                {editingExpenseId ? (
-                  <button
-                    className="button-soft"
-                    onClick={() => {
-                      setEditingExpenseId(null)
-                      setExpenseForm(defaultExpenseForm)
-                    }}
-                    type="button"
-                  >
-                    Cancel Edit
-                  </button>
-                ) : null}
-              </div>
-            </form>
-          </article>
-
-          <article className="panel">
-            <div className="row row-2 row-bottom">
-              <h3>Expense List ({expenses.length})</h3>
-              <div className="row row-2">
-                <input
-                  placeholder="Search title/notes"
-                  value={expenseKeyword}
-                  onChange={(event) => setExpenseKeyword(event.target.value)}
-                />
-                <button
-                  className="button-soft"
-                  disabled={working}
-                  onClick={() => void fetchExpenses(session.userId)}
-                  type="button"
-                >
-                  Search
-                </button>
-              </div>
-            </div>
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Title</th>
-                    <th>Category</th>
-                    <th>Amount</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {expenses.map((expense) => (
-                    <tr key={expense.expenseId}>
-                      <td>{expense.date}</td>
-                      <td>{expense.title}</td>
-                      <td>{categoryNameMap.get(expense.categoryId) || expense.categoryId}</td>
-                      <td>{formatMoney(expense.amount, primaryCurrency)}</td>
-                      <td className="actions-cell">
-                        <button onClick={() => editExpense(expense)} type="button">
-                          Edit
-                        </button>
-                        <button
-                          className="button-danger"
-                          onClick={() => void removeExpense(expense.expenseId)}
-                          type="button"
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </article>
-        </section>
-      ) : null}
-
-      {activeTab === 'income' ? (
-        <section className="stack-lg">
-          <article className="panel">
-            <h2>{editingIncomeId ? 'Edit Income' : 'Add Income'}</h2>
-            <form className="stack" onSubmit={saveIncome}>
-              <div className="row row-3">
-                <label>
-                  Title
-                  <input
-                    required
-                    value={incomeForm.title}
-                    onChange={(event) =>
-                      setIncomeForm((prev) => ({ ...prev, title: event.target.value }))
-                    }
-                  />
-                </label>
-                <label>
-                  Amount
-                  <input
-                    min="0"
-                    required
-                    step="0.01"
-                    type="number"
-                    value={incomeForm.amount}
-                    onChange={(event) =>
-                      setIncomeForm((prev) => ({ ...prev, amount: event.target.value }))
-                    }
-                  />
-                </label>
-                <label>
-                  Category
-                  <select
-                    required
-                    value={incomeForm.categoryId}
-                    onChange={(event) =>
-                      setIncomeForm((prev) => ({ ...prev, categoryId: event.target.value }))
-                    }
-                  >
-                    <option value="">Select</option>
-                    {incomeCategories.map((category) => (
-                      <option key={category.categoryId} value={category.categoryId}>
-                        {category.icon} {category.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-              <div className="row row-3">
-                <label>
-                  Source
-                  <select
-                    value={incomeForm.source}
-                    onChange={(event) =>
-                      setIncomeForm((prev) => ({
-                        ...prev,
-                        source: event.target.value as Income['source'],
-                      }))
-                    }
-                  >
-                    {['SALARY', 'FREELANCE', 'BUSINESS', 'INVESTMENT', 'GIFT', 'OTHER'].map(
-                      (source) => (
-                        <option key={source} value={source}>
-                          {source}
-                        </option>
-                      ),
-                    )}
-                  </select>
-                </label>
-                <label>
-                  Date
-                  <input
-                    required
-                    type="date"
-                    value={incomeForm.date}
-                    onChange={(event) =>
-                      setIncomeForm((prev) => ({ ...prev, date: event.target.value }))
-                    }
-                  />
-                </label>
-                <label className="checkbox-label">
-                  <input
-                    checked={incomeForm.recurring}
-                    onChange={(event) =>
-                      setIncomeForm((prev) => ({ ...prev, recurring: event.target.checked }))
-                    }
-                    type="checkbox"
-                  />
-                  Recurring income
-                </label>
-              </div>
-              {incomeForm.recurring ? (
-                <label>
-                  Recurrence Period
-                  <select
-                    value={incomeForm.recurrencePeriod}
-                    onChange={(event) =>
-                      setIncomeForm((prev) => ({
-                        ...prev,
-                        recurrencePeriod: event.target
-                          .value as IncomeForm['recurrencePeriod'],
-                      }))
-                    }
-                  >
-                    {['DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY'].map(
-                      (period) => (
-                        <option key={period} value={period}>
-                          {period}
-                        </option>
-                      ),
-                    )}
-                  </select>
-                </label>
-              ) : null}
-              <label>
-                Notes
-                <textarea
-                  rows={3}
-                  value={incomeForm.notes}
-                  onChange={(event) =>
-                    setIncomeForm((prev) => ({ ...prev, notes: event.target.value }))
-                  }
-                />
-              </label>
-              <div className="button-row">
-                <button disabled={working} type="submit">
-                  {working ? 'Saving...' : editingIncomeId ? 'Update Income' : 'Add Income'}
-                </button>
-                {editingIncomeId ? (
-                  <button
-                    className="button-soft"
-                    onClick={() => {
-                      setEditingIncomeId(null)
-                      setIncomeForm(defaultIncomeForm)
-                    }}
-                    type="button"
-                  >
-                    Cancel Edit
-                  </button>
-                ) : null}
-              </div>
-            </form>
-          </article>
-
-          <article className="panel">
-            <div className="row row-2 row-bottom">
-              <h3>Income List ({incomes.length})</h3>
-              <div className="row row-2">
-                <input
-                  placeholder="Search title/notes"
-                  value={incomeKeyword}
-                  onChange={(event) => setIncomeKeyword(event.target.value)}
-                />
-                <button
-                  className="button-soft"
-                  disabled={working}
-                  onClick={() => void fetchIncomes(session.userId)}
-                  type="button"
-                >
-                  Search
-                </button>
-              </div>
-            </div>
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Title</th>
-                    <th>Source</th>
-                    <th>Amount</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {incomes.map((income) => (
-                    <tr key={income.incomeId}>
-                      <td>{income.date}</td>
-                      <td>{income.title}</td>
-                      <td>{income.source}</td>
-                      <td>{formatMoney(income.amount, primaryCurrency)}</td>
-                      <td className="actions-cell">
-                        <button onClick={() => editIncome(income)} type="button">
-                          Edit
-                        </button>
-                        <button
-                          className="button-danger"
-                          onClick={() => void removeIncome(income.incomeId)}
-                          type="button"
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </article>
-        </section>
-      ) : null}
-
-      {activeTab === 'categories' ? (
-        <section className="stack-lg">
-          <article className="panel">
-            <div className="row row-2 row-bottom">
-              <h2>{editingCategoryId ? 'Edit Category' : 'Create Category'}</h2>
-              <button className="button-soft" disabled={working} onClick={initDefaultCategories} type="button">
-                Seed Default Categories
-              </button>
-            </div>
-            <form className="stack" onSubmit={saveCategory}>
-              <div className="row row-4">
-                <label>
-                  Name
-                  <input
-                    required
-                    value={categoryForm.name}
-                    onChange={(event) =>
-                      setCategoryForm((prev) => ({ ...prev, name: event.target.value }))
-                    }
-                  />
-                </label>
-                <label>
-                  Type
-                  <select
-                    value={categoryForm.type}
-                    onChange={(event) =>
-                      setCategoryForm((prev) => ({
-                        ...prev,
-                        type: event.target.value as Category['type'],
-                      }))
-                    }
-                  >
-                    <option value="EXPENSE">Expense</option>
-                    <option value="INCOME">Income</option>
-                  </select>
-                </label>
-                <label>
-                  Icon
-                  <input
-                    value={categoryForm.icon}
-                    onChange={(event) =>
-                      setCategoryForm((prev) => ({ ...prev, icon: event.target.value }))
-                    }
-                  />
-                </label>
-                <label>
-                  Color
-                  <input
-                    type="color"
-                    value={categoryForm.colorCode}
-                    onChange={(event) =>
-                      setCategoryForm((prev) => ({
-                        ...prev,
-                        colorCode: event.target.value,
-                      }))
-                    }
-                  />
-                </label>
-              </div>
-              <div className="button-row">
-                <button disabled={working} type="submit">
-                  {working
-                    ? 'Saving...'
-                    : editingCategoryId
-                      ? 'Update Category'
-                      : 'Create Category'}
-                </button>
-                {editingCategoryId ? (
-                  <button
-                    className="button-soft"
-                    onClick={() => {
-                      setEditingCategoryId(null)
-                      setCategoryForm(defaultCategoryForm)
-                    }}
-                    type="button"
-                  >
-                    Cancel Edit
-                  </button>
-                ) : null}
-              </div>
-            </form>
-          </article>
-
-          <article className="panel">
-            <h3>Categories ({categories.length})</h3>
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Type</th>
-                    <th>Budget Limit</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {categories.map((category) => (
-                    <tr key={category.categoryId}>
-                      <td>
-                        <span style={{ color: category.colorCode || '#2a1a12' }}>
-                          {category.icon} {category.name}
-                        </span>
-                      </td>
-                      <td>{category.type}</td>
-                      <td>
-                        {category.budgetLimit
-                          ? formatMoney(toNumber(category.budgetLimit), primaryCurrency)
-                          : '—'}
-                      </td>
-                      <td className="actions-cell">
-                        <button onClick={() => editCategory(category)} type="button">
-                          Edit
-                        </button>
-                        <button
-                          className="button-danger"
-                          onClick={() => void removeCategory(category.categoryId)}
-                          type="button"
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </article>
-        </section>
-      ) : null}
-
-      {activeTab === 'budgets' ? (
-        <section className="stack-lg">
-          <article className="panel">
-            <div className="row row-2 row-bottom">
-              <h2>{editingBudgetId ? 'Edit Budget' : 'Create Budget'}</h2>
-              <button
-                className="button-soft"
-                disabled={working}
-                onClick={dispatchBudgetAlerts}
-                type="button"
-              >
-                Dispatch Active Alerts
-              </button>
-            </div>
-            <form className="stack" onSubmit={saveBudget}>
-              <div className="row row-4">
-                <label>
-                  Name
-                  <input
-                    required
-                    value={budgetForm.name}
-                    onChange={(event) =>
-                      setBudgetForm((prev) => ({ ...prev, name: event.target.value }))
-                    }
-                  />
-                </label>
-                <label>
-                  Category (optional)
-                  <select
-                    value={budgetForm.categoryId}
-                    onChange={(event) =>
-                      setBudgetForm((prev) => ({ ...prev, categoryId: event.target.value }))
-                    }
-                  >
-                    <option value="">Overall budget</option>
-                    {expenseCategories.map((category) => (
-                      <option key={category.categoryId} value={category.categoryId}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  Limit Amount
-                  <input
-                    min="0"
-                    required
-                    step="0.01"
-                    type="number"
-                    value={budgetForm.limitAmount}
-                    onChange={(event) =>
-                      setBudgetForm((prev) => ({
-                        ...prev,
-                        limitAmount: event.target.value,
-                      }))
-                    }
-                  />
-                </label>
-                <label>
-                  Alert %
-                  <input
-                    max="100"
-                    min="1"
-                    step="1"
-                    type="number"
-                    value={budgetForm.alertThreshold}
-                    onChange={(event) =>
-                      setBudgetForm((prev) => ({
-                        ...prev,
-                        alertThreshold: event.target.value,
-                      }))
-                    }
-                  />
-                </label>
-              </div>
-
-              <div className="row row-3">
-                <label>
-                  Period
-                  <select
-                    value={budgetForm.period}
-                    onChange={(event) =>
-                      setBudgetForm((prev) => ({
-                        ...prev,
-                        period: event.target.value as Budget['period'],
-                      }))
-                    }
-                  >
-                    <option value="MONTHLY">Monthly</option>
-                    <option value="WEEKLY">Weekly</option>
-                    <option value="CUSTOM">Custom</option>
-                  </select>
-                </label>
-                <label>
-                  Start Date
-                  <input
-                    disabled={budgetForm.period !== 'CUSTOM'}
-                    type="date"
-                    value={budgetForm.startDate}
-                    onChange={(event) =>
-                      setBudgetForm((prev) => ({ ...prev, startDate: event.target.value }))
-                    }
-                  />
-                </label>
-                <label>
-                  End Date
-                  <input
-                    disabled={budgetForm.period !== 'CUSTOM'}
-                    type="date"
-                    value={budgetForm.endDate}
-                    onChange={(event) =>
-                      setBudgetForm((prev) => ({ ...prev, endDate: event.target.value }))
-                    }
-                  />
-                </label>
-              </div>
-
-              <label className="checkbox-label">
-                <input
-                  checked={budgetForm.active}
-                  onChange={(event) =>
-                    setBudgetForm((prev) => ({ ...prev, active: event.target.checked }))
-                  }
-                  type="checkbox"
-                />
-                Budget is active
-              </label>
-
-              <div className="button-row">
-                <button disabled={working} type="submit">
-                  {working ? 'Saving...' : editingBudgetId ? 'Update Budget' : 'Create Budget'}
-                </button>
-                {editingBudgetId ? (
-                  <button
-                    className="button-soft"
-                    onClick={() => {
-                      setEditingBudgetId(null)
-                      setBudgetForm(defaultBudgetForm)
-                    }}
-                    type="button"
-                  >
-                    Cancel Edit
-                  </button>
-                ) : null}
-              </div>
-            </form>
-          </article>
-
-          <article className="panel">
-            <h3>Budget Progress</h3>
-            <div className="budget-grid">
-              {budgets.map((budget) => {
-                const usedPercent =
-                  budget.limitAmount > 0
-                    ? (budget.spentAmount / budget.limitAmount) * 100
-                    : 0
-                const safePercent = Math.max(0, Math.min(100, usedPercent))
-
-                return (
-                  <div className="budget-card" key={budget.budgetId}>
-                    <div className="row row-2 row-bottom">
-                      <strong>{budget.name}</strong>
-                      <span>{usedPercent.toFixed(1)}%</span>
-                    </div>
-                    <p>
-                      {formatMoney(budget.spentAmount, primaryCurrency)} /{' '}
-                      {formatMoney(budget.limitAmount, primaryCurrency)}
-                    </p>
-                    <div className="progress-track">
-                      <div
-                        className={`progress-bar ${usedPercent >= budget.alertThreshold ? 'progress-alert' : ''}`}
-                        style={{ width: `${safePercent}%` }}
-                      />
-                    </div>
-                    <div className="actions-cell">
-                      <button onClick={() => editBudget(budget)} type="button">
-                        Edit
-                      </button>
-                      <button
-                        className="button-danger"
-                        onClick={() => void removeBudget(budget.budgetId)}
-                        type="button"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </article>
-
-          <article className="panel">
-            <h3>Active Alerts ({budgetAlerts.length})</h3>
-            <div className="list-grid">
-              {budgetAlerts.length === 0 ? (
-                <p className="muted">No thresholds reached yet.</p>
-              ) : (
-                budgetAlerts.map((alert) => (
-                  <div className="list-row" key={alert.budgetId}>
-                    <span>Budget #{alert.budgetId}</span>
-                    <strong>{alert.percentageUsed.toFixed(2)}%</strong>
-                  </div>
-                ))
-              )}
-            </div>
-          </article>
-        </section>
-      ) : null}
-
-      {activeTab === 'recurring' ? (
-        <section className="stack-lg">
-          <article className="panel">
-            <div className="row row-2 row-bottom">
-              <h2>{editingRecurringId ? 'Edit Recurring Rule' : 'Add Recurring Rule'}</h2>
-              <button className="button-soft" disabled={working} onClick={processRecurringNow} type="button">
-                Process Due Now
-              </button>
-            </div>
-            <form className="stack" onSubmit={saveRecurring}>
-              <div className="row row-4">
-                <label>
-                  Title
-                  <input
-                    required
-                    value={recurringForm.title}
-                    onChange={(event) =>
-                      setRecurringForm((prev) => ({ ...prev, title: event.target.value }))
-                    }
-                  />
-                </label>
-                <label>
-                  Amount
-                  <input
-                    min="0"
-                    required
-                    step="0.01"
-                    type="number"
-                    value={recurringForm.amount}
-                    onChange={(event) =>
-                      setRecurringForm((prev) => ({ ...prev, amount: event.target.value }))
-                    }
-                  />
-                </label>
-                <label>
-                  Type
-                  <select
-                    value={recurringForm.type}
-                    onChange={(event) =>
-                      setRecurringForm((prev) => ({
-                        ...prev,
-                        type: event.target.value as RecurringRule['type'],
-                      }))
-                    }
-                  >
-                    <option value="EXPENSE">Expense</option>
-                    <option value="INCOME">Income</option>
-                  </select>
-                </label>
-                <label>
-                  Category
-                  <select
-                    required
-                    value={recurringForm.categoryId}
-                    onChange={(event) =>
-                      setRecurringForm((prev) => ({ ...prev, categoryId: event.target.value }))
-                    }
-                  >
-                    <option value="">Select</option>
-                    {(recurringForm.type === 'EXPENSE' ? expenseCategories : incomeCategories).map(
-                      (category) => (
-                        <option key={category.categoryId} value={category.categoryId}>
-                          {category.name}
-                        </option>
-                      ),
-                    )}
-                  </select>
-                </label>
-              </div>
-              <div className="row row-4">
-                <label>
-                  Frequency
-                  <select
-                    value={recurringForm.frequency}
-                    onChange={(event) =>
-                      setRecurringForm((prev) => ({
-                        ...prev,
-                        frequency: event.target.value as RecurringRule['frequency'],
-                      }))
-                    }
-                  >
-                    {['DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY'].map((frequency) => (
-                      <option key={frequency} value={frequency}>
-                        {frequency}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  Start Date
-                  <input
-                    type="date"
-                    value={recurringForm.startDate}
-                    onChange={(event) =>
-                      setRecurringForm((prev) => ({ ...prev, startDate: event.target.value }))
-                    }
-                  />
-                </label>
-                <label>
-                  Next Due Date
-                  <input
-                    type="date"
-                    value={recurringForm.nextDueDate}
-                    onChange={(event) =>
-                      setRecurringForm((prev) => ({
-                        ...prev,
-                        nextDueDate: event.target.value,
-                      }))
-                    }
-                  />
-                </label>
-                <label>
-                  End Date
-                  <input
-                    type="date"
-                    value={recurringForm.endDate}
-                    onChange={(event) =>
-                      setRecurringForm((prev) => ({ ...prev, endDate: event.target.value }))
-                    }
-                  />
-                </label>
-              </div>
-              <div className="row row-2">
-                <label>
-                  Payment Method
-                  <select
-                    value={recurringForm.paymentMethod}
-                    onChange={(event) =>
-                      setRecurringForm((prev) => ({
-                        ...prev,
-                        paymentMethod: event.target
-                          .value as RecurringRule['paymentMethod'],
-                      }))
-                    }
-                  >
-                    {['CASH', 'CARD', 'UPI', 'BANK', 'WALLET'].map((method) => (
-                      <option key={method} value={method}>
-                        {method}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="checkbox-label">
-                  <input
-                    checked={recurringForm.active}
-                    onChange={(event) =>
-                      setRecurringForm((prev) => ({ ...prev, active: event.target.checked }))
-                    }
-                    type="checkbox"
-                  />
-                  Active rule
-                </label>
-              </div>
-              <label>
-                Description
-                <textarea
-                  rows={3}
-                  value={recurringForm.description}
-                  onChange={(event) =>
-                    setRecurringForm((prev) => ({ ...prev, description: event.target.value }))
-                  }
-                />
-              </label>
-              <div className="button-row">
-                <button disabled={working} type="submit">
-                  {working
-                    ? 'Saving...'
-                    : editingRecurringId
-                      ? 'Update Rule'
-                      : 'Create Rule'}
-                </button>
-                {editingRecurringId ? (
-                  <button
-                    className="button-soft"
-                    onClick={() => {
-                      setEditingRecurringId(null)
-                      setRecurringForm(defaultRecurringForm)
-                    }}
-                    type="button"
-                  >
-                    Cancel Edit
-                  </button>
-                ) : null}
-              </div>
-            </form>
-          </article>
-
-          <article className="panel">
-            <h3>Recurring Rules ({recurringRules.length})</h3>
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Title</th>
-                    <th>Type</th>
-                    <th>Frequency</th>
-                    <th>Next Due</th>
-                    <th>Amount</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recurringRules.map((rule) => (
-                    <tr key={rule.recurringId}>
-                      <td>{rule.title}</td>
-                      <td>{rule.type}</td>
-                      <td>{rule.frequency}</td>
-                      <td>{rule.nextDueDate}</td>
-                      <td>{formatMoney(rule.amount, primaryCurrency)}</td>
-                      <td className="actions-cell">
-                        <button onClick={() => editRecurring(rule)} type="button">
-                          Edit
-                        </button>
-                        <button
-                          className="button-soft"
-                          onClick={() => void deactivateRecurring(rule.recurringId)}
-                          type="button"
-                        >
-                          Deactivate
-                        </button>
-                        <button
-                          className="button-danger"
-                          onClick={() => void removeRecurring(rule.recurringId)}
-                          type="button"
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </article>
-
-          <article className="panel">
-            <h3>Upcoming This Month ({upcomingRecurring.length})</h3>
-            <div className="list-grid">
-              {upcomingRecurring.length === 0 ? (
-                <p className="muted">No recurring dues this month.</p>
-              ) : (
-                upcomingRecurring.map((rule) => (
-                  <div className="list-row" key={`upcoming-${rule.recurringId}`}>
-                    <span>
-                      {rule.title} ({rule.type})
-                    </span>
-                    <strong>{rule.nextDueDate}</strong>
-                  </div>
-                ))
-              )}
-            </div>
-          </article>
-        </section>
-      ) : null}
-
-      {activeTab === 'notifications' ? (
-        <section className="stack-lg">
-          <article className="panel">
-            <div className="row row-2 row-bottom">
-              <h2>Notification Center</h2>
-              <button className="button-soft" disabled={working} onClick={markAllRead} type="button">
-                Mark All Read
-              </button>
-            </div>
-            <div className="list-grid">
-              {notifications.length === 0 ? (
-                <p className="muted">No notifications yet.</p>
-              ) : (
-                notifications.map((notification) => (
-                  <article
-                    className={`notification-card severity-${notification.severity.toLowerCase()}`}
-                    key={notification.notificationId}
-                  >
-                    <div className="row row-2 row-bottom">
-                      <strong>{notification.title}</strong>
-                      <span>{notification.type}</span>
-                    </div>
-                    <p>{notification.message}</p>
-                    <small>{new Date(notification.createdAt).toLocaleString()}</small>
-                    <div className="actions-cell">
-                      {!notification.read ? (
-                        <button
-                          onClick={() => void markNotificationRead(notification.notificationId)}
-                          type="button"
-                        >
-                          Mark Read
-                        </button>
-                      ) : null}
-                      {!notification.acknowledged ? (
-                        <button
-                          className="button-soft"
-                          onClick={() =>
-                            void acknowledgeNotification(notification.notificationId)
-                          }
-                          type="button"
-                        >
-                          Acknowledge
-                        </button>
-                      ) : null}
-                      <button
-                        className="button-danger"
-                        onClick={() => void deleteNotification(notification.notificationId)}
-                        type="button"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </article>
-                ))
-              )}
-            </div>
-          </article>
-        </section>
-      ) : null}
-
-      {activeTab === 'profile' ? (
-        <section className="stack-lg">
-          <article className="panel">
-            <h2>Profile</h2>
-            <form className="stack" onSubmit={updateProfile}>
-              <div className="row row-2">
-                <label>
-                  Full Name
-                  <input
-                    required
-                    value={profileName}
-                    onChange={(event) => setProfileName(event.target.value)}
-                  />
-                </label>
-                <label>
-                  Email
-                  <input
-                    required
-                    type="email"
-                    value={profileEmail}
-                    onChange={(event) => setProfileEmail(event.target.value)}
-                  />
-                </label>
-              </div>
-              <div className="row row-2">
-                <label>
-                  Timezone
-                  <input
-                    value={profileTimezone}
-                    onChange={(event) => setProfileTimezone(event.target.value)}
-                  />
-                </label>
-                <label>
-                  Avatar URL
-                  <input
-                    value={profileAvatar}
-                    onChange={(event) => setProfileAvatar(event.target.value)}
-                  />
-                </label>
-              </div>
-              <label>
-                Bio
-                <textarea
-                  rows={3}
-                  value={profileBio}
-                  onChange={(event) => setProfileBio(event.target.value)}
-                />
-              </label>
-              <button disabled={working} type="submit">
-                {working ? 'Saving...' : 'Update Profile'}
-              </button>
-            </form>
-          </article>
-
-          <article className="panel">
-            <h3>Preferences</h3>
-            <div className="row row-2">
-              <label>
-                Currency
-                <select
-                  value={profileCurrency}
-                  onChange={(event) => setProfileCurrency(event.target.value)}
-                >
-                  {['USD', 'INR', 'EUR', 'GBP'].map((currency) => (
-                    <option key={currency} value={currency}>
-                      {currency}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <div className="button-row align-end">
-                <button disabled={working} onClick={updateCurrency} type="button">
-                  Save Currency
-                </button>
-              </div>
-            </div>
-
-            <div className="row row-2">
-              <label>
-                Monthly Budget Goal
-                <input
-                  min="0"
-                  step="0.01"
-                  type="number"
-                  value={profileMonthlyBudget}
-                  onChange={(event) => setProfileMonthlyBudget(event.target.value)}
-                />
-              </label>
-              <div className="button-row align-end">
-                <button disabled={working} onClick={updateMonthlyBudget} type="button">
-                  Save Goal
-                </button>
-              </div>
-            </div>
-
-            <div className="danger-zone">
-              <p>
-                Deactivate account keeps data for audit but blocks login and app access.
-              </p>
-              <button
-                className="button-danger"
-                disabled={working}
-                onClick={deactivateAccount}
-                type="button"
-              >
-                Deactivate Account
-              </button>
-            </div>
-          </article>
-        </section>
-      ) : null}
-    </main>
+    <BrowserRouter>
+      {session ? (
+        <AppShell onLogout={onLogout} profile={profile} unreadCount={unreadCount} working={working}>
+          <Routes>
+            <Route element={<Navigate replace to="/overview" />} path="/" />
+            <Route element={<Overview data={dashboardData} />} path="/overview" />
+            <Route element={<ExpensesPage data={dashboardData} />} path="/expenses" />
+            <Route element={<ExpenseDetail data={dashboardData} />} path="/expenses/:id" />
+            <Route element={<IncomePage data={dashboardData} />} path="/income" />
+            <Route element={<IncomeDetail data={dashboardData} />} path="/income/:id" />
+            <Route element={<CategoriesPage data={dashboardData} />} path="/categories" />
+            <Route element={<CategoryDetail data={dashboardData} />} path="/categories/:id" />
+            <Route element={<BudgetsPage data={dashboardData} />} path="/budgets" />
+            <Route element={<BudgetDetail data={dashboardData} />} path="/budgets/:id" />
+            <Route element={<RecurringPage data={dashboardData} />} path="/recurring" />
+            <Route element={<RecurringDetail data={dashboardData} />} path="/recurring/:id" />
+            <Route element={<NotificationsPage data={dashboardData} />} path="/notifications" />
+            <Route element={<ProfilePage data={dashboardData} />} path="/profile" />
+            <Route element={<Navigate replace to="/overview" />} path="*" />
+          </Routes>
+        </AppShell>
+      ) : (
+        <Routes>
+          <Route element={<Landing />} path="/" />
+          <Route element={<LoginPage data={authData} />} path="/login" />
+          <Route element={<SignupPage data={authData} />} path="/signup" />
+          <Route element={<OAuthCallback data={authData} />} path="/oauth/callback/:provider" />
+          <Route element={<Navigate replace to="/" />} path="*" />
+        </Routes>
+      )}
+    </BrowserRouter>
   )
 }
 
