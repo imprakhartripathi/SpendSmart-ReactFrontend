@@ -1,0 +1,27 @@
+:root {
+  --font-family-base: 'Inter', 'Sora', 'Space Grotesk', 'IBM Plex Sans', 'Segoe UI', sans-serif;
+  --font-family-display: 'Clash Display', 'Sora', 'Space Grotesk', sans-serif;
+
+  /* Backgrounds & surfaces */
+  --color-bg: #f6f8fa; /* very light neutral */
+  --color-surface: #ffffff;
+  --color-surface-soft: #f3f6f8;
+  --color-border: #e6eef3;
+
+  /* Text */
+  --color-text: #0e2430; /* deep charcoal/navy */
+  --color-muted: #556b76;
+
+  /* Primary (deep navy) + accent (warm gold) */
+  --color-primary: #0f2a3d; /* deep navy */
+  --color-accent: #c9a15b; /* warm gold */
+  --color-accent-soft: color-mix(in srgb, var(--color-accent) 18%, white);
+
+  /* Semantic */
+  --color-good: #1f9d7a;
+  --color-bad: #cf5560;
+
+  /* Elevation shadows */
+  --shadow-card: 0 18px 40px -24px rgba(16, 32, 40, 0.12);
+  --shadow-elevated: 0 28px 60px -30px rgba(11, 28, 40, 0.18);
+}
