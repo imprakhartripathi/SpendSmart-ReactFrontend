@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
-import axios, { type Method } from 'axios'
+import axios from 'axios'
 import {
   BrowserRouter,
   Navigate,
@@ -25,7 +25,8 @@ import OAuthCallback from '@/app/pages/OAuthCallback'
 import RecurringDetail from '@/app/pages/RecurringDetail'
 import RecurringPage from '@/app/pages/Recurring'
 import SignupPage from '@/app/pages/Signup'
-import { config } from '@/config/config'
+import { requestApi } from '@/services/api'
+import type { ApiRequestOptions } from '@/services/api'
 import type {
   Budget,
   BudgetForm,
@@ -47,9 +48,8 @@ import type {
   SummaryCard,
   TrendRow,
   UserProfile,
+  ServiceKey,
 } from '@/app/types'
-
-type ServiceKey = keyof typeof config.api.services
 
 const today = new Date().toISOString().slice(0, 10)
 const now = new Date()
@@ -152,8 +152,6 @@ const formatMoney = (value: number, currency: string): string => {
 }
 
 function App() {
-  const services = config.api.services
-
   const [session, setSession] = useState<Session | null>(() => readSession())
   const [flash, setFlash] = useState<Flash | null>(null)
   const [working, setWorking] = useState(false)
@@ -339,27 +337,19 @@ function App() {
 
   const runApi = async <T,>(
     service: ServiceKey,
-    method: Method,
+    method: ApiRequestOptions['method'],
     path: string,
     params?: Record<string, string | number | boolean>,
     data?: unknown,
   ): Promise<T> => {
-    const headers: Record<string, string> = {}
-    if (session?.token) {
-      headers.Authorization = `Bearer ${session.token}`
-    }
-
-    const response = await axios.request<T>({
-      baseURL: services[service],
-      url: path,
+    return requestApi<T>({
+      service,
       method,
-      timeout: config.api.timeoutMs,
+      path,
       params,
       data,
-      headers,
+      token: session?.token,
     })
-
-    return response.data
   }
 
   const showError = (error: unknown, fallbackMessage: string) => {
